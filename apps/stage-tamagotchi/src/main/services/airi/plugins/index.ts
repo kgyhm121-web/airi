@@ -35,22 +35,6 @@ interface PluginHostService {
   manifests: ManifestV1[]
 }
 
-interface CapabilityAwarePluginHost extends PluginHost {
-  setProvidersListResolver: (resolver: () => Promise<Array<{ name: string }>> | Array<{ name: string }>) => void
-  announceCapability: (key: string, metadata?: Record<string, unknown>) => {
-    key: string
-    state: 'announced' | 'ready'
-    metadata?: Record<string, unknown>
-    updatedAt: number
-  }
-  markCapabilityReady: (key: string, metadata?: Record<string, unknown>) => {
-    key: string
-    state: 'announced' | 'ready'
-    metadata?: Record<string, unknown>
-    updatedAt: number
-  }
-}
-
 interface PluginConfig {
   enabled: string[]
   known: Record<string, { path: string }>
@@ -157,9 +141,6 @@ export async function setupPluginHost(): Promise<PluginHostService> {
   pluginConfig.setup()
 
   const host = new PluginHost({ runtime: 'electron' })
-  // NOTICE: stage-tamagotchi currently typechecks against package exports while plugin-sdk changes
-  // are source-local in this workspace. Cast keeps the bridge typed until package dist is regenerated.
-  const capabilityHost = host as CapabilityAwarePluginHost
   let entries = await loadManifestsFrom(pluginsRoot, log)
   let manifests = entries.map(entry => entry.manifest)
   const loaded = new Set<string>()
@@ -192,7 +173,7 @@ export async function setupPluginHost(): Promise<PluginHostService> {
         runtime: session.runtime,
         moduleId: session.identity.id,
       })),
-      capabilities: capabilityHost.listCapabilities(),
+      capabilities: host.listCapabilities(),
       refreshedAt: Date.now(),
     }
   }
@@ -306,14 +287,14 @@ export async function setupPluginHost(): Promise<PluginHostService> {
 
   defineInvokeHandler(context, electronPluginUpdateCapability, async (payload) => {
     if (payload.key === pluginProtocolListProvidersEventName && payload.state === 'ready') {
-      capabilityHost.setProvidersListResolver(async () => await invokePluginProtocolListProviders())
+      host.setProvidersListResolver(async () => await invokePluginProtocolListProviders())
     }
 
     if (payload.state === 'announced') {
-      return capabilityHost.announceCapability(payload.key, payload.metadata)
+      return host.announceCapability(payload.key, payload.metadata)
     }
 
-    return capabilityHost.markCapabilityReady(payload.key, payload.metadata)
+    return host.markCapabilityReady(payload.key, payload.metadata)
   })
 
   onAppReady(async () => {

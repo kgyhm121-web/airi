@@ -16,10 +16,22 @@
     "directory": "packages/electron-screen-capture"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./main": "./dist/main.mjs",
-    "./renderer": "./dist/renderer.js",
-    "./vue": "./dist/vue.js",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./main": {
+      "types": "./dist/main.d.mts",
+      "default": "./dist/main.mjs"
+    },
+    "./renderer": {
+      "types": "./dist/renderer.d.ts",
+      "default": "./dist/renderer.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "default": "./dist/vue.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.js",
